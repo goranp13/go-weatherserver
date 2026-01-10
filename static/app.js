@@ -1,4 +1,8 @@
+// Store last viewed location for auto-refresh
+let lastViewedLocation = null;
+
 function loadWeather(location) {
+    lastViewedLocation = location;
     fetch('/api/weather/' + location)
         .then(r => r.json())
         .then(data => {
@@ -11,6 +15,7 @@ function loadWeather(location) {
 }
 
 function loadForecast(location) {
+    lastViewedLocation = location;
     fetch('/api/forecast/' + location)
         .then(r => r.json())
         .then(data => {
@@ -22,3 +27,19 @@ function loadForecast(location) {
             alert(msg);
         });
 }
+
+// Auto-refresh data every 15 minutes (900000 milliseconds)
+function startAutoRefresh() {
+    setInterval(function() {
+        if (lastViewedLocation) {
+            // Silently refresh data in the background
+            fetch('/api/weather/' + lastViewedLocation)
+                .catch(err => console.log('Auto-refresh failed:', err));
+        }
+    }, 15 * 60 * 1000); // 15 minutes
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    startAutoRefresh();
+});
