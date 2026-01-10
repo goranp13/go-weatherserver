@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌤️ Vremenska prognoza Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ Vremenska prognoza</h1>
+        <div class="locations-grid">
+            <div class="weather-card" onclick="loadWeather('zagreb')">
+                <div class="location-name">Zagreb</div>
+                <div class="weather-emoji">☁️</div>
+                <div class="temp">3°C</div>
+                <div class="condition">Oblačno</div>
+                <div class="details">
+                    <div class="detail-item">💨 12 km/h</div>
+                    <div class="detail-item">💧 75%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('zagreb')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" onclick="loadWeather('split')">
+                <div class="location-name">Split</div>
+                <div class="weather-emoji">☀️</div>
+                <div class="temp">11°C</div>
+                <div class="condition">Sunčano</div>
+                <div class="details">
+                    <div class="detail-item">💨 8 km/h</div>
+                    <div class="detail-item">💧 65%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('split')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" onclick="loadWeather('dubrovnik')">
+                <div class="location-name">Dubrovnik</div>
+                <div class="weather-emoji">☀️</div>
+                <div class="temp">13°C</div>
+                <div class="condition">Sunčano</div>
+                <div class="details">
+                    <div class="detail-item">💨 5 km/h</div>
+                    <div class="detail-item">💧 60%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('dubrovnik')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" onclick="loadWeather('rijeka')">
+                <div class="location-name">Rijeka</div>
+                <div class="weather-emoji">🌧️</div>
+                <div class="temp">5°C</div>
+                <div class="condition">Kišno</div>
+                <div class="details">
+                    <div class="detail-item">💨 18 km/h</div>
+                    <div class="detail-item">💧 88%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('rijeka')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" onclick="loadWeather('zadar')">
+                <div class="location-name">Zadar</div>
+                <div class="weather-emoji">⛅</div>
+                <div class="temp">10°C</div>
+                <div class="condition">Djelomično oblačno</div>
+                <div class="details">
+                    <div class="detail-item">💨 10 km/h</div>
+                    <div class="detail-item">💧 70%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('zadar')">Prognoza od 5 dana</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
