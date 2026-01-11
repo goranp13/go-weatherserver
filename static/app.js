@@ -4,44 +4,54 @@ let lastRefreshTime = new Date(); // Initialize immediately to current time
 
 // Function to update a city card with fresh data
 function updateCityCard(location, weatherData) {
-    // Find the card that corresponds to this location
-    const cards = document.querySelectorAll('.weather-card');
-    console.log('Updating card for:', location, 'Found cards:', cards.length);
+    console.log('updateCityCard called for:', location, weatherData);
     
-    cards.forEach(card => {
-        const locationNameEl = card.querySelector('.location-name');
-        if (locationNameEl) {
-            const cardLocation = locationNameEl.textContent.toLowerCase().trim();
-            console.log('Checking card:', cardLocation, 'against:', location);
+    // Map location names
+    const locationMap = {
+        'zagreb': 'Zagreb',
+        'split': 'Split',
+        'dubrovnik': 'Dubrovnik',
+        'rijeka': 'Rijeka',
+        'zadar': 'Zadar'
+    };
+    
+    const displayName = locationMap[location.toLowerCase()];
+    console.log('Looking for display name:', displayName);
+    
+    // Find the card by onclick attribute
+    const cards = document.querySelectorAll('.weather-card');
+    console.log('Total cards found:', cards.length);
+    
+    for (let card of cards) {
+        const onclick = card.getAttribute('onclick');
+        console.log('Card onclick:', onclick);
+        
+        if (onclick && onclick.includes("loadWeather('" + location + "'")) {
+            console.log('✓ Found matching card for', location);
             
-            if (cardLocation === location.toLowerCase()) {
-                console.log('Found matching card for', location, 'updating with:', weatherData);
-                
-                // Update the card with fresh data
-                const tempEl = card.querySelector('.temp');
-                const conditionEl = card.querySelector('.condition');
-                const emojiEl = card.querySelector('.weather-emoji');
-                const detailItems = card.querySelectorAll('.detail-item');
-                
-                if (tempEl) {
-                    tempEl.textContent = weatherData.Temperature + '°C';
-                    console.log('Updated temp to:', weatherData.Temperature);
-                }
-                if (conditionEl) {
-                    conditionEl.textContent = weatherData.Condition;
-                    console.log('Updated condition to:', weatherData.Condition);
-                }
-                if (emojiEl) {
-                    emojiEl.textContent = weatherData.Emoji;
-                }
-                if (detailItems.length >= 2) {
-                    detailItems[0].textContent = '💨 ' + weatherData.WindSpeed + ' km/h';
-                    detailItems[1].textContent = '💧 ' + weatherData.Humidity + '%';
-                    console.log('Updated details - Wind:', weatherData.WindSpeed, 'Humidity:', weatherData.Humidity);
-                }
+            // Update all elements in this card
+            const tempEl = card.querySelector('.temp');
+            const conditionEl = card.querySelector('.condition');
+            const emojiEl = card.querySelector('.weather-emoji');
+            const detailItems = card.querySelectorAll('.detail-item');
+            
+            console.log('Elements found - temp:', !!tempEl, 'condition:', !!conditionEl, 'emoji:', !!emojiEl, 'details:', detailItems.length);
+            
+            if (tempEl) tempEl.textContent = weatherData.Temperature + '°C';
+            if (conditionEl) conditionEl.textContent = weatherData.Condition;
+            if (emojiEl) emojiEl.textContent = weatherData.Emoji;
+            
+            if (detailItems.length >= 2) {
+                detailItems[0].textContent = '💨 ' + weatherData.WindSpeed + ' km/h';
+                detailItems[1].textContent = '💧 ' + weatherData.Humidity + '%';
             }
+            
+            console.log('✓ Card updated successfully');
+            return;
         }
-    });
+    }
+    
+    console.log('✗ No matching card found for', location);
 }
 
 function updateRefreshStatus() {
