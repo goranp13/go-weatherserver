@@ -6,21 +6,40 @@ let lastRefreshTime = new Date(); // Initialize immediately to current time
 function updateCityCard(location, weatherData) {
     // Find the card that corresponds to this location
     const cards = document.querySelectorAll('.weather-card');
+    console.log('Updating card for:', location, 'Found cards:', cards.length);
+    
     cards.forEach(card => {
-        const locationName = card.querySelector('.location-name');
-        if (locationName && locationName.textContent.toLowerCase() === location.toLowerCase()) {
-            // Update the card with fresh data
-            const tempEl = card.querySelector('.temp');
-            const conditionEl = card.querySelector('.condition');
-            const emojiEl = card.querySelector('.weather-emoji');
-            const windEl = card.querySelector('.detail-item:nth-child(1)');
-            const humidityEl = card.querySelector('.detail-item:nth-child(2)');
+        const locationNameEl = card.querySelector('.location-name');
+        if (locationNameEl) {
+            const cardLocation = locationNameEl.textContent.toLowerCase().trim();
+            console.log('Checking card:', cardLocation, 'against:', location);
             
-            if (tempEl) tempEl.textContent = weatherData.Temperature + '°C';
-            if (conditionEl) conditionEl.textContent = weatherData.Condition;
-            if (emojiEl) emojiEl.textContent = weatherData.Emoji;
-            if (windEl) windEl.textContent = '💨 ' + weatherData.WindSpeed + ' km/h';
-            if (humidityEl) humidityEl.textContent = '💧 ' + weatherData.Humidity + '%';
+            if (cardLocation === location.toLowerCase()) {
+                console.log('Found matching card for', location, 'updating with:', weatherData);
+                
+                // Update the card with fresh data
+                const tempEl = card.querySelector('.temp');
+                const conditionEl = card.querySelector('.condition');
+                const emojiEl = card.querySelector('.weather-emoji');
+                const detailItems = card.querySelectorAll('.detail-item');
+                
+                if (tempEl) {
+                    tempEl.textContent = weatherData.Temperature + '°C';
+                    console.log('Updated temp to:', weatherData.Temperature);
+                }
+                if (conditionEl) {
+                    conditionEl.textContent = weatherData.Condition;
+                    console.log('Updated condition to:', weatherData.Condition);
+                }
+                if (emojiEl) {
+                    emojiEl.textContent = weatherData.Emoji;
+                }
+                if (detailItems.length >= 2) {
+                    detailItems[0].textContent = '💨 ' + weatherData.WindSpeed + ' km/h';
+                    detailItems[1].textContent = '💧 ' + weatherData.Humidity + '%';
+                    console.log('Updated details - Wind:', weatherData.WindSpeed, 'Humidity:', weatherData.Humidity);
+                }
+            }
         }
     });
 }
@@ -102,23 +121,34 @@ function startStatusUpdater() {
 // Initialize the app immediately
 // Fetch fresh data for all cities on page load
 function loadAllCitiesData() {
+    console.log('Starting to load fresh data for all cities...');
     const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
     cities.forEach(city => {
-        fetch('/api/weather/' + city)
-            .then(r => r.json())
-            .then(data => {
-                updateCityCard(city, data.Current);
-                lastRefreshTime = new Date();
-                updateRefreshStatus();
-                console.log('Loaded data for', city);
+        const url = '/api/weather/' + city;
+        console.log('Fetching:', url);
+        fetch(url)
+            .then(r => {
+                console.log('Response received for', city, 'status:', r.status);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
             })
-            .catch(err => console.log('Failed to load', city, ':', err));
+            .then(data => {
+                console.log('Data loaded for', city, ':', data);
+                if (data.Current) {
+                    updateCityCard(city, data.Current);
+                    lastRefreshTime = new Date();
+                    updateRefreshStatus();
+                    console.log('✓ Updated card for', city);
+                }
+            })
+            .catch(err => console.error('Failed to load', city, ':', err));
     });
 }
 
+console.log('App script loaded, DOM ready:', document.readyState);
 updateRefreshStatus(); // Show current time on page load
 loadAllCitiesData(); // Load fresh data for all cities
 startAutoRefresh(); // Start 15-minute auto-refresh loop
 startStatusUpdater(); // Start 1-second status updater
 
-console.log('App initialized. Loading fresh data for all cities.');
+console.log('✓ App initialized. Waiting for data to load...');
