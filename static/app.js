@@ -67,5 +67,25 @@ function startAutoRefresh() {
     console.log('Auto-refresh started. Will refresh every 15 minutes.');
 }
 
-// Start auto-refresh immediately (script is loaded at end of body)
+// Fetch initial data on page load for first city (Zagreb)
+function fetchInitialData() {
+    lastViewedLocation = 'zagreb';
+    fetch('/api/weather/zagreb')
+        .then(r => r.json())
+        .then(data => {
+            lastRefreshTime = new Date();
+            updateRefreshStatus();
+            console.log('Initial data loaded:', data);
+        })
+        .catch(err => console.log('Initial fetch failed:', err));
+}
+
+// Update refresh status every second to show elapsed time
+function startStatusUpdater() {
+    setInterval(updateRefreshStatus, 1000);
+}
+
+// Start everything when script loads
+fetchInitialData();
 startAutoRefresh();
+startStatusUpdater();
