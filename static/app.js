@@ -17,6 +17,8 @@ function updateRefreshStatus() {
                 timeStr = 'prije ' + Math.floor(diff / 3600) + ' sati';
             }
             statusEl.textContent = 'Zadnja osvježavanja: ' + timeStr;
+        } else {
+            statusEl.textContent = 'Zadnja osvježavanja: učitavam...';
         }
     }
 }
@@ -26,12 +28,15 @@ function loadWeather(location) {
     fetch('/api/weather/' + location)
         .then(r => r.json())
         .then(data => {
+            lastRefreshTime = new Date();
+            updateRefreshStatus();
             alert(data.Current.Location + '\n' +
                   'Temperatura: ' + data.Current.Temperature + '°C\n' +
                   'Stanje: ' + data.Current.Condition + '\n' +
                   'Osjeća se kao: ' + data.Current.FeelsLike + '°C\n\n' +
                   data.Current.DramaticMessage);
-        });
+        })
+        .catch(err => console.log('loadWeather failed:', err));
 }
 
 function loadForecast(location) {
@@ -39,13 +44,16 @@ function loadForecast(location) {
     fetch('/api/forecast/' + location)
         .then(r => r.json())
         .then(data => {
+            lastRefreshTime = new Date();
+            updateRefreshStatus();
             let cityName = location.charAt(0).toUpperCase() + location.slice(1);
             let msg = 'Prognoza od 5 dana za ' + cityName + ':\n\n';
             data.Forecast.forEach(day => {
                 msg += day.Date + ': ' + day.Emoji + ' ' + day.High + '°C / ' + day.Low + '°C\n';
             });
             alert(msg);
-        });
+        })
+        .catch(err => console.log('loadForecast failed:', err));
 }
 
 // Auto-refresh data every 15 minutes (900000 milliseconds)
@@ -70,14 +78,25 @@ function startAutoRefresh() {
 // Fetch initial data on page load for first city (Zagreb)
 function fetchInitialData() {
     lastViewedLocation = 'zagreb';
-    fetch('/api/weather/zagreb')
-        .then(r => r.json())
+    const url = '/api/weather/zagreb';
+    console.log('Fetching data from:', url);
+    
+    fetch(url)
+        .then(r => {
+            console.log('Response status:', r.status);
+            if (!r.ok) throw new Error('HTTP error, status=' + r.status);
+            return r.json();
+        })
         .then(data => {
             lastRefreshTime = new Date();
             updateRefreshStatus();
-            console.log('Initial data loaded:', data);
+            console.log('Initial data loaded successfully:', data);
         })
-        .catch(err => console.log('Initial fetch failed:', err));
+        .catch(err => {
+            console.error('Initial fetch failed:', err);
+            lastRefreshTime = new Date();
+            updateRefreshStatus();
+        });
 }
 
 // Update refresh status every second to show elapsed time
@@ -86,6 +105,9 @@ function startStatusUpdater() {
 }
 
 // Start everything when script loads
-fetchInitialData();
-startAutoRefresh();
-startStatusUpdater();
+setTimeout(function() {
+    console.log('Starting data fetch...');
+    fetchInitialData();
+    startAutoRefresh();
+    startStatusUpdater();
+}, 100);
