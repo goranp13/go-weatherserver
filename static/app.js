@@ -2,6 +2,38 @@
 let lastViewedLocation = null;
 let lastRefreshTime = null;
 
+// Function to update a city card with fresh data
+function updateCityCard(location, data) {
+    const card = document.querySelector(`[onclick*="loadWeather('${location}')"]`);
+    if (card) {
+        const tempEl = card.querySelector('.temp');
+        const conditionEl = card.querySelector('.condition');
+        const emojiEl = card.querySelector('.weather-emoji');
+        const windEl = card.querySelector('.detail-item:nth-child(1)');
+        const humidityEl = card.querySelector('.detail-item:nth-child(2)');
+        
+        if (tempEl) tempEl.textContent = data.Temperature + '°C';
+        if (conditionEl) conditionEl.textContent = data.Condition;
+        if (emojiEl) emojiEl.textContent = data.Emoji;
+        if (windEl) windEl.textContent = '💨 ' + data.WindSpeed + ' km/h';
+        if (humidityEl) humidityEl.textContent = '💧 ' + data.Humidity + '%';
+    }
+}
+
+// Use injected data from HTML if available
+if (typeof window.initialData !== 'undefined' && window.initialData) {
+    lastRefreshTime = window.refreshTime;
+    lastViewedLocation = 'zagreb';
+    updateCityCard('zagreb', window.initialData);
+    console.log('Using injected initial data:', window.initialData);
+    // Schedule the status update to happen after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateRefreshStatus);
+    } else {
+        setTimeout(updateRefreshStatus, 0);
+    }
+}
+
 function updateRefreshStatus() {
     const statusEl = document.getElementById('refreshStatus');
     if (statusEl) {
@@ -106,8 +138,15 @@ function startStatusUpdater() {
 
 // Start everything when script loads
 setTimeout(function() {
-    console.log('Starting data fetch...');
-    fetchInitialData();
+    console.log('Initializing app...');
+    // If we have injected data, we're already initialized, just start the refresh loops
+    if (lastRefreshTime) {
+        console.log('Using pre-loaded data, refresh time set to:', lastRefreshTime);
+        updateRefreshStatus(); // Update the status message now
+    } else {
+        // Only fetch if we don't have injected data
+        fetchInitialData();
+    }
     startAutoRefresh();
     startStatusUpdater();
-}, 100);
+}, 50);
