@@ -1,58 +1,7 @@
 // Store last viewed location for auto-refresh
 let lastViewedLocation = 'zagreb';
 let lastRefreshTime = new Date(); // Initialize immediately to current time
-
-// Function to update a city card with fresh data
-function updateCityCard(location, weatherData) {
-    console.log('updateCityCard called for:', location, weatherData);
-    
-    // Map location names
-    const locationMap = {
-        'zagreb': 'Zagreb',
-        'split': 'Split',
-        'dubrovnik': 'Dubrovnik',
-        'rijeka': 'Rijeka',
-        'zadar': 'Zadar'
-    };
-    
-    const displayName = locationMap[location.toLowerCase()];
-    console.log('Looking for display name:', displayName);
-    
-    // Find the card by onclick attribute
-    const cards = document.querySelectorAll('.weather-card');
-    console.log('Total cards found:', cards.length);
-    
-    for (let card of cards) {
-        const onclick = card.getAttribute('onclick');
-        console.log('Card onclick:', onclick);
-        
-        if (onclick && onclick.includes("loadWeather('" + location + "'")) {
-            console.log('✓ Found matching card for', location);
-            
-            // Update all elements in this card
-            const tempEl = card.querySelector('.temp');
-            const conditionEl = card.querySelector('.condition');
-            const emojiEl = card.querySelector('.weather-emoji');
-            const detailItems = card.querySelectorAll('.detail-item');
-            
-            console.log('Elements found - temp:', !!tempEl, 'condition:', !!conditionEl, 'emoji:', !!emojiEl, 'details:', detailItems.length);
-            
-            if (tempEl) tempEl.textContent = weatherData.Temperature + '°C';
-            if (conditionEl) conditionEl.textContent = weatherData.Condition;
-            if (emojiEl) emojiEl.textContent = weatherData.Emoji;
-            
-            if (detailItems.length >= 2) {
-                detailItems[0].textContent = '💨 ' + weatherData.WindSpeed + ' km/h';
-                detailItems[1].textContent = '💧 ' + weatherData.Humidity + '%';
-            }
-            
-            console.log('✓ Card updated successfully');
-            return;
-        }
-    }
-    
-    console.log('✗ No matching card found for', location);
-}
+let citiesData = {}; // Store fetched data
 
 function updateRefreshStatus() {
     const statusEl = document.getElementById('refreshStatus');
@@ -69,6 +18,48 @@ function updateRefreshStatus() {
         }
         statusEl.textContent = 'Zadnja osvježavanja: ' + timeStr;
     }
+}
+
+// Render all city cards with current data
+function renderCityCards() {
+    console.log('Rendering cards with data:', citiesData);
+    const grid = document.querySelector('.locations-grid');
+    if (!grid) return;
+    
+    // Clear existing cards
+    grid.innerHTML = '';
+    
+    const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
+    
+    cities.forEach(city => {
+        const data = citiesData[city];
+        if (!data) {
+            console.log('No data for', city, 'skipping');
+            return;
+        }
+        
+        console.log('Creating card for', city, ':', data);
+        
+        const card = document.createElement('div');
+        card.className = 'weather-card';
+        card.onclick = function() { loadWeather(city); };
+        
+        card.innerHTML = `
+            <div class="location-name">${data.Location}</div>
+            <div class="weather-emoji">${data.Emoji}</div>
+            <div class="temp">${data.Temperature}°C</div>
+            <div class="condition">${data.Condition}</div>
+            <div class="details">
+                <div class="detail-item">💨 ${data.WindSpeed} km/h</div>
+                <div class="detail-item">💧 ${data.Humidity}%</div>
+            </div>
+            <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('${city}')">Prognoza od 5 dana</button>
+        `;
+        
+        grid.appendChild(card);
+    });
+    
+    console.log('✓ Cards rendered');
 }
 
 function loadWeather(location) {
@@ -133,6 +124,8 @@ function startStatusUpdater() {
 function loadAllCitiesData() {
     console.log('Starting to load fresh data for all cities...');
     const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
+    let loadedCount = 0;
+    
     cities.forEach(city => {
         const url = '/api/weather/' + city;
         console.log('Fetching:', url);
@@ -145,10 +138,14 @@ function loadAllCitiesData() {
             .then(data => {
                 console.log('Data loaded for', city, ':', data);
                 if (data.Current) {
-                    updateCityCard(city, data.Current);
+                    citiesData[city] = data.Current;
+                    loadedCount++;
+                    console.log('✓ Stored data for', city, '(' + loadedCount + '/5)');
+                    
+                    // Re-render cards once we have any data
+                    renderCityCards();
                     lastRefreshTime = new Date();
                     updateRefreshStatus();
-                    console.log('✓ Updated card for', city);
                 }
             })
             .catch(err => console.error('Failed to load', city, ':', err));
