@@ -1,5 +1,25 @@
 // Store last viewed location for auto-refresh
 let lastViewedLocation = null;
+let lastRefreshTime = null;
+
+function updateRefreshStatus() {
+    const statusEl = document.getElementById('refreshStatus');
+    if (statusEl) {
+        if (lastRefreshTime) {
+            const now = new Date();
+            const diff = Math.floor((now - lastRefreshTime) / 1000);
+            let timeStr = '';
+            if (diff < 60) {
+                timeStr = 'upravo sada';
+            } else if (diff < 3600) {
+                timeStr = 'prije ' + Math.floor(diff / 60) + ' minuta';
+            } else {
+                timeStr = 'prije ' + Math.floor(diff / 3600) + ' sati';
+            }
+            statusEl.textContent = 'Zadnja osvježavanja: ' + timeStr;
+        }
+    }
+}
 
 function loadWeather(location) {
     lastViewedLocation = location;
@@ -30,16 +50,22 @@ function loadForecast(location) {
 
 // Auto-refresh data every 15 minutes (900000 milliseconds)
 function startAutoRefresh() {
+    const refreshInterval = 15 * 60 * 1000; // 15 minutes
     setInterval(function() {
         if (lastViewedLocation) {
             // Silently refresh data in the background
             fetch('/api/weather/' + lastViewedLocation)
+                .then(r => r.json())
+                .then(data => {
+                    lastRefreshTime = new Date();
+                    updateRefreshStatus();
+                    console.log('Auto-refresh completed for:', lastViewedLocation, data);
+                })
                 .catch(err => console.log('Auto-refresh failed:', err));
         }
-    }, 15 * 60 * 1000); // 15 minutes
+    }, refreshInterval);
+    console.log('Auto-refresh started. Will refresh every 15 minutes.');
 }
 
-// Start auto-refresh when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    startAutoRefresh();
-});
+// Start auto-refresh immediately (script is loaded at end of body)
+startAutoRefresh();

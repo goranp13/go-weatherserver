@@ -22,10 +22,21 @@ body {
 h1 {
     text-align: center;
     color: white;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     font-size: 3em;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     animation: float 3s ease-in-out infinite;
+}
+
+.refresh-status {
+    text-align: center;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 30px;
+    font-size: 0.9em;
+    font-style: italic;
+    padding: 10px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 10px;
 }
 
 @keyframes float {
