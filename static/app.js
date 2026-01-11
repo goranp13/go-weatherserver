@@ -23,13 +23,17 @@ function updateRefreshStatus() {
 // Render all city cards with current data
 function renderCityCards() {
     console.log('Rendering cards with data:', citiesData);
-    const grid = document.querySelector('.locations-grid');
-    if (!grid) return;
+    const grid = document.getElementById('locationsGrid');
+    if (!grid) {
+        console.error('Grid element not found');
+        return;
+    }
     
     // Clear existing cards
     grid.innerHTML = '';
     
     const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
+    let cardCount = 0;
     
     cities.forEach(city => {
         const data = citiesData[city];
@@ -39,6 +43,7 @@ function renderCityCards() {
         }
         
         console.log('Creating card for', city, ':', data);
+        cardCount++;
         
         const card = document.createElement('div');
         card.className = 'weather-card';
@@ -59,7 +64,7 @@ function renderCityCards() {
         grid.appendChild(card);
     });
     
-    console.log('✓ Cards rendered');
+    console.log('✓ Cards rendered:', cardCount, 'cards created');
 }
 
 function loadWeather(location) {
