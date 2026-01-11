@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -227,36 +226,10 @@ func generateForecast() []ForecastDay {
 
 // Handler for root path - HTML dashboard
 func weatherDashboardHandler(w http.ResponseWriter, r *http.Request) {
-	// Fetch fresh data for Zagreb to inject into the page
-	zagarData, _ := locations["zagreb"]
-	zagarData.Temperature = zagarData.Temperature + rand.Intn(5) - 2
-	zagarData.FeelsLike = zagarData.Temperature - 1 - rand.Intn(3)
-	zagarData.WindSpeed = zagarData.WindSpeed + rand.Intn(5) - 2
-	zagarData.Humidity = zagarData.Humidity + rand.Intn(10) - 5
-	if zagarData.Humidity < 30 {
-		zagarData.Humidity = 30
-	}
-	if zagarData.Humidity > 99 {
-		zagarData.Humidity = 99
-	}
-	zagarData.DramaticMessage = getDramaticMessage(zagarData.Condition)
-
-	// Read the HTML template
-	htmlBytes, _ := ioutil.ReadFile("templates/index.html")
-	htmlContent := string(htmlBytes)
-
-	// Inject initial data as JSON into a script tag
-	dataJSON, _ := json.Marshal(zagarData)
-	injectedScript := `<script>
-window.initialData = ` + string(dataJSON) + `;
-window.refreshTime = new Date();
-</script>`
-
-	// Insert before the closing body tag
-	htmlContent = strings.Replace(htmlContent, "</body>", injectedScript+"</body>", 1)
-
+	// Serve the static HTML dashboard (templates/index.html)
+	// The frontend JS will fetch API data from /api/* endpoints.
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, htmlContent)
+	http.ServeFile(w, r, "templates/index.html")
 }
 
 // Handler for weather API endpoint
