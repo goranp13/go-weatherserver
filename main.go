@@ -243,6 +243,18 @@ func weatherAPIHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate fresh weather data with slight variations
+	weather.Temperature = weather.Temperature + rand.Intn(5) - 2 // ±2°C variation
+	weather.FeelsLike = weather.Temperature - 1 - rand.Intn(3)
+	weather.WindSpeed = weather.WindSpeed + rand.Intn(5) - 2
+	weather.Humidity = weather.Humidity + rand.Intn(10) - 5
+	if weather.Humidity < 30 {
+		weather.Humidity = 30
+	}
+	if weather.Humidity > 99 {
+		weather.Humidity = 99
+	}
+
 	weather.DramaticMessage = getDramaticMessage(weather.Condition)
 	weather.Description = getAsciiArt(weather.Condition)
 
