@@ -131,36 +131,73 @@ function loadAllCitiesData() {
     const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
     let loadedCount = 0;
     
+    // Add a timeout to show error if nothing loads after 5 seconds
+    setTimeout(() => {
+        if (loadedCount === 0) {
+            console.error('⚠️ No data loaded after 5 seconds. API might be down.');
+            const grid = document.getElementById('locationsGrid');
+            if (grid) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: red;">❌ Greška pri učitavanju podataka</div>';
+            }
+        }
+    }, 5000);
+    
     cities.forEach(city => {
         const url = '/api/weather/' + city;
         console.log('Fetching:', url);
+        
         fetch(url)
             .then(r => {
-                console.log('Response received for', city, 'status:', r.status);
-                if (!r.ok) throw new Error('HTTP ' + r.status);
+                console.log('✓ Response received for', city, 'status:', r.status);
+                if (!r.ok) {
+                    throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+                }
                 return r.json();
             })
             .then(data => {
-                console.log('Data loaded for', city, ':', data);
+                console.log('✓ JSON parsed for', city, 'data keys:', Object.keys(data));
+                console.log('  Current:', data.Current);
+                
                 if (data.Current) {
                     citiesData[city] = data.Current;
                     loadedCount++;
                     console.log('✓ Stored data for', city, '(' + loadedCount + '/5)');
+                    console.log('  Temperature:', data.Current.Temperature, 'Condition:', data.Current.Condition);
                     
                     // Re-render cards once we have any data
+                    console.log('Calling renderCityCards with:', Object.keys(citiesData));
                     renderCityCards();
                     lastRefreshTime = new Date();
                     updateRefreshStatus();
+                } else {
+                    console.error('⚠️ No Current field in response for', city);
                 }
             })
-            .catch(err => console.error('Failed to load', city, ':', err));
+            .catch(err => {
+                console.error('❌ Failed to load', city, ':', err.message);
+                console.error('  Stack:', err.stack);
+            });
     });
 }
 
 console.log('App script loaded, DOM ready:', document.readyState);
-updateRefreshStatus(); // Show current time on page load
-loadAllCitiesData(); // Load fresh data for all cities
-startAutoRefresh(); // Start 15-minute auto-refresh loop
-startStatusUpdater(); // Start 1-second status updater
+console.log('Grid element found:', !!document.getElementById('locationsGrid'));
 
-console.log('✓ App initialized. Waiting for data to load...');
+// Ensure DOM is ready before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOMContentLoaded fired');
+        updateRefreshStatus();
+        loadAllCitiesData();
+        startAutoRefresh();
+        startStatusUpdater();
+    });
+} else {
+    console.log('DOM already ready, initializing immediately');
+    updateRefreshStatus(); // Show current time on page load
+    loadAllCitiesData(); // Load fresh data for all cities
+    startAutoRefresh(); // Start 15-minute auto-refresh loop
+    startStatusUpdater(); // Start 1-second status updater
+}
+
+console.log('✓ App initialization scheduled. Waiting for data to load...');
