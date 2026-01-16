@@ -1,7 +1,46 @@
+console.log('APP.JS LOADED - Version 3');
+
+//CodeGeex suggestion for fetch retry function
+function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+    return new Promise((resolve, reject) => {
+        const attempt = (n) => {
+            fetch(url, options)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.json();
+                })
+                .then(resolve)
+                .catch(error => {
+                    if (n <= 0) return reject(error);
+                    console.log(`Retrying ${url}, attempts left: ${n}`);
+                    setTimeout(() => attempt(n - 1), delay);
+                });
+        };
+        attempt(retries);
+    });
+}
+
 // Store last viewed location for auto-refresh
 let lastViewedLocation = 'zagreb';
-let lastRefreshTime = new Date(); // Initialize immediately to current time
-let citiesData = {}; // Store fetched data
+let lastRefreshTime = new Date();
+
+// Dark mode handling
+function initDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        darkModeToggle.textContent = '☀️';
+    }
+    
+    darkModeToggle.addEventListener('click', function() {
+        document.documentElement.classList.toggle('dark-mode');
+        const isDark = document.documentElement.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        darkModeToggle.textContent = isDark ? '☀️' : '🌙';
+    });
+}
 
 function updateRefreshStatus() {
     const statusEl = document.getElementById('refreshStatus');
@@ -20,51 +59,33 @@ function updateRefreshStatus() {
     }
 }
 
-// Render all city cards with current data
-function renderCityCards() {
-    console.log('Rendering cards with data:', citiesData);
-    const grid = document.getElementById('locationsGrid');
-    if (!grid) {
-        console.error('Grid element not found');
+function updateCardData(city, data) {
+    const card = document.querySelector(`[data-city="${city}"]`);
+    if (!card) {
+        console.error('Card not found for:', city);
         return;
     }
     
-    // Clear existing cards
-    grid.innerHTML = '';
+    console.log('Updating card for', city, 'with:', data);
+    console.log('Card element:', card);
     
-    const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
-    let cardCount = 0;
+    const tempEl = card.querySelector('.temp');
+    const conditionEl = card.querySelector('.condition');
+    const emojiEl = card.querySelector('.weather-emoji');
+    const detailItems = card.querySelectorAll('.detail-item');
+        
+    console.log('Temperature element:', tempEl);
+    console.log('Condition element:', conditionEl);
+    console.log('Emoji element:', emojiEl);
+    console.log('Detail items:', detailItems);
     
-    cities.forEach(city => {
-        const data = citiesData[city];
-        if (!data) {
-            console.log('No data for', city, 'skipping');
-            return;
-        }
-        
-        console.log('Creating card for', city, ':', data);
-        cardCount++;
-        
-        const card = document.createElement('div');
-        card.className = 'weather-card';
-        card.onclick = function() { loadWeather(city); };
-        
-        card.innerHTML = `
-            <div class="location-name">${data.Location}</div>
-            <div class="weather-emoji">${data.Emoji}</div>
-            <div class="temp">${data.Temperature}°C</div>
-            <div class="condition">${data.Condition}</div>
-            <div class="details">
-                <div class="detail-item">💨 ${data.WindSpeed} km/h</div>
-                <div class="detail-item">💧 ${data.Humidity}%</div>
-            </div>
-            <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('${city}')">Prognoza od 5 dana</button>
-        `;
-        
-        grid.appendChild(card);
-    });
+    if (tempEl) tempEl.textContent = data.Temperature + '°C';
+    if (conditionEl) conditionEl.textContent = data.Condition;
+    if (emojiEl) emojiEl.textContent = data.Emoji;
+    if (detailItems[0]) detailItems[0].textContent = '💨 ' + data.WindSpeed + ' km/h';
+    if (detailItems[1]) detailItems[1].textContent = '💧 ' + data.Humidity + '%';
     
-    console.log('✓ Cards rendered:', cardCount, 'cards created');
+    console.log('✓ Card updated for', city);
 }
 
 function loadWeather(location) {
@@ -74,13 +95,19 @@ function loadWeather(location) {
         .then(data => {
             lastRefreshTime = new Date();
             updateRefreshStatus();
-            alert(data.Current.Location + '\n' +
-                  'Temperatura: ' + data.Current.Temperature + '°C\n' +
-                  'Stanje: ' + data.Current.Condition + '\n' +
-                  'Osjeća se kao: ' + data.Current.FeelsLike + '°C\n\n' +
-                  data.Current.DramaticMessage);
+            const msg = `${data.Current.Location}\n` +
+                  `Temperatura: ${data.Current.Temperature}°C\n` +
+                  `Stanje: ${data.Current.Condition}\n` +
+                  `Osjeća se kao: ${data.Current.FeelsLike}°C\n` +
+                  `Vlaga: ${data.Current.Humidity}%\n` +
+                  `Vjetar: ${data.Current.WindSpeed} km/h\n\n` +
+                  `${data.Current.DramaticMessage}`;
+            alert(msg);
         })
-        .catch(err => console.log('loadWeather failed:', err));
+        .catch(err => {
+            console.error('loadWeather failed:', err);
+            alert('Greška pri učitavanju podataka');
+        });
 }
 
 function loadForecast(location) {
@@ -93,111 +120,129 @@ function loadForecast(location) {
             let cityName = location.charAt(0).toUpperCase() + location.slice(1);
             let msg = 'Prognoza od 5 dana za ' + cityName + ':\n\n';
             data.Forecast.forEach(day => {
-                msg += day.Date + ': ' + day.Emoji + ' ' + day.High + '°C / ' + day.Low + '°C\n';
+                msg += day.Date + ': ' + day.Emoji + ' ' + day.High + '°C / ' + day.Low + '°C - ' + day.Condition + '\n';
             });
             alert(msg);
         })
-        .catch(err => console.log('loadForecast failed:', err));
+        .catch(err => {
+            console.error('loadForecast failed:', err);
+            alert('Greška pri učitavanju prognoze');
+        });
 }
 
-// Auto-refresh data every 15 minutes (900000 milliseconds)
+// Auto-refresh data every 15 minutes
 function startAutoRefresh() {
-    const refreshInterval = 15 * 60 * 1000; // 15 minutes
+    const refreshInterval = 15 * 60 * 1000;
     setInterval(function() {
         if (lastViewedLocation) {
-            // Silently refresh data in the background
             fetch('/api/weather/' + lastViewedLocation)
                 .then(r => r.json())
                 .then(data => {
                     lastRefreshTime = new Date();
                     updateRefreshStatus();
-                    console.log('Auto-refresh completed for:', lastViewedLocation, data);
+                    console.log('Auto-refresh completed');
                 })
                 .catch(err => console.log('Auto-refresh failed:', err));
         }
     }, refreshInterval);
-    console.log('Auto-refresh started. Will refresh every 15 minutes.');
+    console.log('Auto-refresh started');
 }
 
-// Update refresh status every second to show elapsed time
+// Update refresh status every second
 function startStatusUpdater() {
     setInterval(updateRefreshStatus, 1000);
 }
 
-// Initialize the app immediately
-// Fetch fresh data for all cities on page load
+// Load all cities data
 function loadAllCitiesData() {
     console.log('Starting to load fresh data for all cities...');
-    const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar'];
-    let loadedCount = 0;
-    
-    // Add a timeout to show error if nothing loads after 5 seconds
-    setTimeout(() => {
-        if (loadedCount === 0) {
-            console.error('⚠️ No data loaded after 5 seconds. API might be down.');
-            const grid = document.getElementById('locationsGrid');
-            if (grid) {
-                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: red;">❌ Greška pri učitavanju podataka</div>';
-            }
-        }
-    }, 5000);
+    const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar', 'osijek'];
     
     cities.forEach(city => {
         const url = '/api/weather/' + city;
         console.log('Fetching:', url);
         
+        // Use regular fetch to debug the issue
         fetch(url)
-            .then(r => {
-                console.log('✓ Response received for', city, 'status:', r.status);
-                if (!r.ok) {
-                    throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+            .then(response => {
+                console.log('Response received for', city, 'status:', response.status);
+                console.log('Response headers:', response.headers);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                return r.json();
+                return response.json();
             })
             .then(data => {
-                console.log('✓ JSON parsed for', city, 'data keys:', Object.keys(data));
-                console.log('  Current:', data.Current);
+                console.log('Data received for', city, ':', data);
+                console.log('Data type:', typeof data);
+                console.log('Data keys:', data ? Object.keys(data) : 'null/undefined');
+                
+                // Validate data structure
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid data format received');
+                }
                 
                 if (data.Current) {
-                    citiesData[city] = data.Current;
-                    loadedCount++;
-                    console.log('✓ Stored data for', city, '(' + loadedCount + '/5)');
-                    console.log('  Temperature:', data.Current.Temperature, 'Condition:', data.Current.Condition);
-                    
-                    // Re-render cards once we have any data
-                    console.log('Calling renderCityCards with:', Object.keys(citiesData));
-                    renderCityCards();
-                    lastRefreshTime = new Date();
-                    updateRefreshStatus();
+                    // Use data.Current for weather alerts
+                    updateCardData(city, data.Current);
+                } else if (data.Temperature !== undefined) {
+                    // Direct weather data format
+                    updateCardData(city, data);
                 } else {
-                    console.error('⚠️ No Current field in response for', city);
+                    throw new Error('Missing required weather data fields');
                 }
+                
+                lastRefreshTime = new Date();
+                updateRefreshStatus();
             })
             .catch(err => {
-                console.error('❌ Failed to load', city, ':', err.message);
-                console.error('  Stack:', err.stack);
+                console.error('Failed to load data for', city, ':', err);
+                
+                // Show user-friendly error message
+                const card = document.querySelector(`[data-city="${city}"]`);
+                if (card) {
+                    const tempEl = card.querySelector('.temp');
+                    const conditionEl = card.querySelector('.condition');
+                    if (tempEl) tempEl.textContent = 'N/A';
+                    if (conditionEl) conditionEl.textContent = 'Data unavailable';
+                    
+                    // You can also consider displaying an alert or updating the UI with an error message
+                }
             });
     });
 }
 
-console.log('App script loaded, DOM ready:', document.readyState);
-console.log('Grid element found:', !!document.getElementById('locationsGrid'));
 
-// Ensure DOM is ready before initializing
+// Add click listeners to weather cards
+function initCardClickListeners() {
+    const cards = document.querySelectorAll('.weather-card');
+    cards.forEach(card => {
+        card.addEventListener('click', function() {
+            const city = this.getAttribute('data-city');
+            if (city) {
+                loadWeather(city);
+            }
+        });
+    });
+}
+
+// Initialize app
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOMContentLoaded fired');
+        console.log('DOM ready');
+        initDarkMode();
+        initCardClickListeners();
         updateRefreshStatus();
         loadAllCitiesData();
         startAutoRefresh();
         startStatusUpdater();
     });
 } else {
-    console.log('DOM already ready, initializing immediately');
-    updateRefreshStatus(); // Show current time on page load
-    loadAllCitiesData(); // Load fresh data for all cities
-    startAutoRefresh(); // Start 15-minute auto-refresh loop
-    startStatusUpdater(); // Start 1-second status updater
+    console.log('DOM already ready');
+    initDarkMode();
+    initCardClickListeners();
+    updateRefreshStatus();
+    loadAllCitiesData();
+    startAutoRefresh();
+    startStatusUpdater();
 }
-
-console.log('✓ App initialization scheduled. Waiting for data to load...');

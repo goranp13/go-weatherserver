@@ -7,17 +7,217 @@
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🌤️ Vremenska prognoza</h1>
+    <div class="header">
+        <div class="header-content">
+            <h1>🌤️ Vremenska prognoza</h1>
+            <div class="controls">
+                <button id="darkModeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+            </div>
+        </div>
         <div class="refresh-status" id="refreshStatus">Zadnja osvježavanja: upravo sada</div>
+    </div>
+
+    <div class="container">
         <div class="locations-grid" id="locationsGrid">
-            <!-- Cards will be dynamically rendered by JavaScript -->
-            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
-                ⏳ Učitavanje podataka...
+            <div class="weather-card" data-city="zagreb">
+                <div class="location-name">Zagreb</div>
+                <div class="weather-emoji">☁️</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('zagreb')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" data-city="split">
+                <div class="location-name">Split</div>
+                <div class="weather-emoji">☀️</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('split')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" data-city="dubrovnik">
+                <div class="location-name">Dubrovnik</div>
+                <div class="weather-emoji">☀️</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('dubrovnik')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" data-city="rijeka">
+                <div class="location-name">Rijeka</div>
+                <div class="weather-emoji">🌧️</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('rijeka')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" data-city="zadar">
+                <div class="location-name">Zadar</div>
+                <div class="weather-emoji">⛅</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('zadar')">Prognoza od 5 dana</button>
+            </div>
+
+            <div class="weather-card" data-city="osijek">
+                <div class="location-name">Osijek</div>
+                <div class="weather-emoji">-</div>
+                <div class="temp">-°C</div>
+                <div class="condition">-</div>
+                <div class="details">
+                    <div class="detail-item">💨 - km/h</div>
+                    <div class="detail-item">💧 -%</div>
+                </div>
+                <button class="forecast-btn" onclick="event.stopPropagation(); loadForecast('osijek')">Prognoza od 5 dana</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
-</body>
+    <script>
+        console.log('Inline script loaded - VERSION WITH FORECAST');
+        
+        // Test that loadForecast function exists
+        console.log('loadForecast function:', typeof loadForecast);
+        
+        // Load all cities data
+        function loadAllCitiesData() {
+            console.log('Starting to load fresh data for all cities...');
+            const cities = ['zagreb', 'split', 'dubrovnik', 'rijeka', 'zadar', 'osijek'];
+            
+            cities.forEach(city => {
+                const url = '/api/weather/' + city;
+                console.log('Fetching:', url);
+                
+                fetch(url)
+                    .then(response => {
+                        console.log('Response received for', city, 'status:', response.status);
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Data received for', city, ':', data);
+                        
+                        // Update the card
+                        const card = document.querySelector(`[data-city="${city}"]`);
+                        if (card && data.Current) {
+                            const tempEl = card.querySelector('.temp');
+                            const conditionEl = card.querySelector('.condition');
+                            const emojiEl = card.querySelector('.weather-emoji');
+                            const detailItems = card.querySelectorAll('.detail-item');
+                            
+                            if (tempEl) tempEl.textContent = data.Current.Temperature + '°C';
+                            if (conditionEl) conditionEl.textContent = data.Current.Condition;
+                            if (emojiEl) emojiEl.textContent = data.Current.Emoji;
+                            if (detailItems[0]) detailItems[0].textContent = '💨 ' + data.Current.WindSpeed + ' km/h';
+                            if (detailItems[1]) detailItems[1].textContent = '💧 ' + data.Current.Humidity + '%';
+                            
+                            console.log('✓ Card updated for', city);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to load data for', city, ':', err);
+                        const card = document.querySelector(`[data-city="${city}"]`);
+                        if (card) {
+                            const tempEl = card.querySelector('.temp');
+                            const conditionEl = card.querySelector('.condition');
+                            if (tempEl) tempEl.textContent = 'N/A';
+                            if (conditionEl) conditionEl.textContent = 'Data unavailable';
+                        }
+                    });
+            });
+        }
+        
+        // Load forecast function for 5-day forecast buttons
+        function loadForecast(location) {
+            console.log('Loading forecast for', location);
+            fetch('/api/forecast/' + location)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Forecast data received for', location, ':', data);
+                    let cityName = location.charAt(0).toUpperCase() + location.slice(1);
+                    let msg = 'Prognoza od 5 dana za ' + cityName + ':\n\n';
+                    data.Forecast.forEach(day => {
+                        msg += day.Date + ': ' + day.Emoji + ' ' + day.High + '°C / ' + day.Low + '°C - ' + day.Condition + '\n';
+                    });
+                    alert(msg);
+                })
+                .catch(err => {
+                    console.error('loadForecast failed:', err);
+                    alert('Greška pri učitavanju prognoze');
+                });
+        }
+        
+        // Add click listeners to weather cards
+        function initCardClickListeners() {
+            const cards = document.querySelectorAll('.weather-card');
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const city = this.getAttribute('data-city');
+                    if (city) {
+                        fetch('/api/weather/' + city)
+                            .then(r => r.json())
+                            .then(data => {
+                                const msg = `${data.Current.Location}\n` +
+                                      `Temperatura: ${data.Current.Temperature}°C\n` +
+                                      `Stanje: ${data.Current.Condition}\n` +
+                                      `Osjeća se kao: ${data.Current.FeelsLike}°C\n` +
+                                      `Vlaga: ${data.Current.Humidity}%\n` +
+                                      `Vjetar: ${data.Current.WindSpeed} km/h\n\n` +
+                                      `${data.Current.DramaticMessage}`;
+                                alert(msg);
+                            })
+                            .catch(err => {
+                                console.error('loadWeather failed:', err);
+                                alert('Greška pri učitavanju podataka');
+                            });
+                    }
+                });
+            });
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM ready');
+                initCardClickListeners();
+                loadAllCitiesData();
+            });
+        } else {
+            console.log('DOM already ready');
+            initCardClickListeners();
+            loadAllCitiesData();
+        }
+        
+        window.addEventListener('beforeunload', function() {
+            fetch('/shutdown', { keepalive: true });
+        });
+    </script>
+    </body>
 </html>
